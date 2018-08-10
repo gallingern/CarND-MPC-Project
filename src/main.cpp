@@ -93,6 +93,7 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          double Lf = 2.67;
 
           /*
           * TODO: Calculate steering angle and throttle using MPC.
@@ -100,6 +101,9 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+          double steer_value = j[1]["steering_angle"];
+          double throttle_value = j[1]["throttle"];
+
           // TODO: fit a polynomial to the above x and y coordinates
           auto coeffs = polyfit(ptsx, ptsy, 1);
 
@@ -109,14 +113,21 @@ int main() {
           // TODO: calculate the orientation error
           double epsi = psi - atan(coeffs[1]);
 
-          Eigen::VectorXd state(6);
+          double latency = 0.1; // 100 milliseconds
+          double psi_new = v * steer_value / Lf * latency;
+          double x_new = v * latency * cos(psi_new);
+          double y_new = v * latency * sin(psi_new);
+          double v_new = v + throttle_value * latency;
+          double cte_new = cte + v * sin(epsi) * latency;
+          double epsi_new = epsi + v * steer_value / Lf * latency;
 
-          state << px, py, psi, v, cte, epsi;
+          Eigen::VectorXd state(6);
+          state << x_new, y_new, psi_new, v_new, cte_new, epsi_new;
 
           auto vars = mpc.Solve(state, coeffs);
 
-          double steer_value = vars[0]/deg2rad(25);
-          double throttle_value = vars[1];
+          steer_value = vars[0]/deg2rad(25);
+          throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.

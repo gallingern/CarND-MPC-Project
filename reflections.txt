@@ -1,0 +1,40 @@
+The Model
+
+Student describes their model in detail. 
+This includes the state, actuators and update equations.
+
+State:
+
+x - x position
+y - y position
+psi - angle of orientation
+v - velocity
+cte - cross track error
+epsi - orientation error
+
+Actuators:
+
+Steering
+Throttle
+
+Update Equations:
+
+Solve - sets up vehicle model constraints and variables for Ipopt
+FG_eval - Polynomial coefficients are used to calculate cross track error and heading error
+
+
+Timestep Length and Elapsed Duration (N & dt)
+
+Student discusses the reasoning behind the chosen N 
+(timestep length) and dt (elapsed duration between timesteps) values. 
+Additionally the student details the previous values tried.
+
+Final:
+N = 10
+d = 0.1
+Tried:
+N = 25
+d = 0.05
+
+T equals the product of N and d.  Model is executed for d elapsed seconds between actuations, and  N number of timesteps in the horizon.  
+T should be no more than a few seconds.  Any longer and it won't make sense to make a prediction.  Larger d results in less frequent actuations.  
