@@ -89,9 +89,6 @@ int main() {
           vector<double> ptsy_vec = j[1]["ptsy"];
           Eigen::VectorXd ptsx = Eigen::VectorXd::Map(ptsx_vec.data(), ptsx_vec.size());
           Eigen::VectorXd ptsy = Eigen::VectorXd::Map(ptsy_vec.data(), ptsy_vec.size());
-          double px = j[1]["x"];
-          double py = j[1]["y"];
-          double psi = j[1]["psi"];
           double v = j[1]["speed"];
           double Lf = 2.67;
 
@@ -101,39 +98,47 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value = j[1]["steering_angle"];
-          double throttle_value = j[1]["throttle"];
+          double delta = j[1]["steering_angle"];
+          //  change of sign because turning left is negative sign in simulator but positive yaw for MPC
+          delta = -delta;
+          double a = j[1]["throttle"];
 
           // TODO: fit a polynomial to the above x and y coordinates
-          auto coeffs = polyfit(ptsx, ptsy, 1);
+          auto coeffs = polyfit(ptsx, ptsy, 3);
 
           // Calculating the cross track and orientation error
           // TODO: calculate the cross track error
-          double cte = polyeval(coeffs, px) - py;
+          double cte = polyeval(coeffs, 0);
           // TODO: calculate the orientation error
-          double epsi = psi - atan(coeffs[1]);
+          double epsi = -atan(coeffs[1]);
 
           double latency = 0.1; // 100 milliseconds
-          double psi_new = v * steer_value / Lf * latency;
+          //to convert miles per hour to meter per second, and you should convert ref_v too
+          v *= 0.44704;
+          double psi_new = delta; // in coordinate now, so use steering angle
+
           double x_new = v * latency * cos(psi_new);
           double y_new = v * latency * sin(psi_new);
-          double v_new = v + throttle_value * latency;
+
           double cte_new = cte + v * sin(epsi) * latency;
-          double epsi_new = epsi + v * steer_value / Lf * latency;
+          double epsi_new = epsi + v * delta / Lf * latency;
+
+          psi_new = psi_new + v * delta * latency / Lf;
+          double v_new = v + a * latency;
 
           Eigen::VectorXd state(6);
           state << x_new, y_new, psi_new, v_new, cte_new, epsi_new;
 
           auto vars = mpc.Solve(state, coeffs);
 
-          steer_value = vars[0]/deg2rad(25);
-          throttle_value = vars[1];
+          delta = vars[0]/deg2rad(25);
+          a = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = throttle_value;
+          msgJson["steering_angle"] = delta;
+          msgJson["throttle"] = a;
 
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;

@@ -19,6 +19,13 @@ Throttle
 
 Update Equations:
 
+x(t+1) = x_t + v_t * cos(psi_t) * dt
+y(t+1) = y_t + v_t * sin(psi_t) * dt
+psi(t+1) = psi_t + v_t / L_f * del_t * dt
+v(t+1) = v_t + a_t * dt
+cte(t+1) = f(x_t) - y_t + (v_t * sin(e_psi_t) * dt)
+e_psi(t+1) = psi_t - psi * des_t + (v_t / L_f * del_t * dt)
+
 Solve - sets up vehicle model constraints and variables for Ipopt
 FG_eval - Polynomial coefficients are used to calculate cross track error and heading error
 
