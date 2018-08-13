@@ -29,6 +29,35 @@ e_psi(t+1) = psi_t - psi * des_t + (v_t / L_f * del_t * dt)
 Solve - sets up vehicle model constraints and variables for Ipopt
 FG_eval - Polynomial coefficients are used to calculate cross track error and heading error
 
+Waypoint Pre-processing: coordinate transform
+
+The waypoints must be transformed to the new coordinate system before fitting the polynomial.
+This is done in main with the following code:
+
+// Transform waypoints coordinate system
+for(int i = 0; i < ptsx_vec.size(); i++) {
+  ptsx[i] = (ptsx_vec[i] - px) * cos(psi) + (ptsy_vec[i] - py) * sin(psi);
+}
+for(int i = 0; i < ptsy_vec.size(); i++) {
+  ptsy[i] = (ptsy_vec[i] - py) * cos(psi) - (ptsx_vec[i] - px) * sin(psi);
+}
+
+Latency Handling
+
+In a real car, an actuation command won't execute instantly - there will be a delay as the 
+command propagates through the system. A realistic delay might be on the order of 100 milliseconds.
+This implemented in main with the following code:
+
+double latency = 0.1; // 100 milliseconds simulated system delay
+double x_new = v * latency * cos(psi_new);
+double y_new = v * latency * sin(psi_new);
+double cte_new = cte + v * sin(epsi) * latency;
+double epsi_new = epsi + v * delta / Lf * latency;
+psi_new = psi_new + v * delta * latency / Lf;
+double v_new = v + a * latency;
+
+
+
 
 Timestep Length and Elapsed Duration (N & dt)
 

@@ -87,9 +87,22 @@ int main() {
           // j[1] is the data JSON object
           vector<double> ptsx_vec = j[1]["ptsx"];
           vector<double> ptsy_vec = j[1]["ptsy"];
-          Eigen::VectorXd ptsx = Eigen::VectorXd::Map(ptsx_vec.data(), ptsx_vec.size());
-          Eigen::VectorXd ptsy = Eigen::VectorXd::Map(ptsy_vec.data(), ptsy_vec.size());
+          double px = j[1]["x"];
+          double py = j[1]["y"];
+          double psi = j[1]["psi"];
+          Eigen::VectorXd ptsx(ptsx_vec.size());
+          Eigen::VectorXd ptsy(ptsy_vec.size());
+
+          // Transform waypoints coordinate system
+          for(int i = 0; i < ptsx_vec.size(); i++) {
+              ptsx[i] = (ptsx_vec[i] - px) * cos(psi) + (ptsy_vec[i] - py) * sin(psi);
+          }
+          for(int i = 0; i < ptsy_vec.size(); i++) {
+              ptsy[i] = (ptsy_vec[i] - py) * cos(psi) - (ptsx_vec[i] - px) * sin(psi);
+          }
+
           double v = j[1]["speed"];
+          v *= 0.44704; // convert miles per hour to meter per second
           double Lf = 2.67;
 
           /*
@@ -103,26 +116,20 @@ int main() {
           delta = -delta;
           double a = j[1]["throttle"];
 
-          // TODO: fit a polynomial to the above x and y coordinates
+          // fit a polynomial to the above x and y coordinates
           auto coeffs = polyfit(ptsx, ptsy, 3);
 
           // Calculating the cross track and orientation error
-          // TODO: calculate the cross track error
           double cte = polyeval(coeffs, 0);
-          // TODO: calculate the orientation error
           double epsi = -atan(coeffs[1]);
 
-          double latency = 0.1; // 100 milliseconds
-          //to convert miles per hour to meter per second, and you should convert ref_v too
-          v *= 0.44704;
           double psi_new = delta; // in coordinate now, so use steering angle
 
+          double latency = 0.1; // 100 milliseconds simulated system delay
           double x_new = v * latency * cos(psi_new);
           double y_new = v * latency * sin(psi_new);
-
           double cte_new = cte + v * sin(epsi) * latency;
           double epsi_new = epsi + v * delta / Lf * latency;
-
           psi_new = psi_new + v * delta * latency / Lf;
           double v_new = v + a * latency;
 

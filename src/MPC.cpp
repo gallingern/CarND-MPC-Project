@@ -162,6 +162,18 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vars_upperbound[i] = 0.436332;
   }
 
+  // Acceleration limits
+  for (i = a_start; i < n_vars; i++) {
+      vars_lowerbound[i] = -1.0;
+      vars_upperbound[i] = 1.0;
+  }
+
+  // Set bounds for all other states to be very large
+  for (i = 0; i < delta_start; i++) {
+      vars_lowerbound[i] = -1.0e19;
+      vars_upperbound[i] = 1.0e19;
+  }
+
   // Lower and upper limits for the constraints
   // Should be 0 besides initial state.
   Dvector constraints_lowerbound(n_constraints);
